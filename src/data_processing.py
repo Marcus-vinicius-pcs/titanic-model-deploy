@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pickle
 import logging
@@ -7,7 +6,7 @@ from typing import Dict, Any
 
 from sklearn.base import BaseEstimator, TransformerMixin
 
-logger = logging.getLogger('src.data_processing')
+logger = logging.getLogger("src.data_processing")
 
 
 class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
@@ -18,60 +17,97 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
         X = X.copy()
 
         # Title
-        X['Title'] = X['Name'].apply(lambda name: re.search(r' ([A-Za-z]+)\.', name).group(1)
-                                     if re.search(r' ([A-Za-z]+)\.', name) else "")
-        X['Title_Mapped'] = X['Title'].map({
-            "Mr": "Mr", "Miss": "Miss", "Mrs": "Mrs", "Master": "Master",
-            "Dr": "Rare", "Rev": "Rare", "Mlle": "Miss", "Major": "Rare",
-            "Col": "Rare", "Sir": "Rare", "Mme": "Mrs", "Don": "Rare",
-            "Lady": "Rare", "Countess": "Rare", "Jonkheer": "Rare",
-            "Dona": "Rare", "Capt": "Rare"
-        }).fillna("Rare")
+        X["Title"] = X["Name"].apply(
+            lambda name: (
+                re.search(r" ([A-Za-z]+)\.", name).group(1)
+                if re.search(r" ([A-Za-z]+)\.", name)
+                else ""
+            )
+        )
+        X["Title_Mapped"] = (
+            X["Title"]
+            .map(
+                {
+                    "Mr": "Mr",
+                    "Miss": "Miss",
+                    "Mrs": "Mrs",
+                    "Master": "Master",
+                    "Dr": "Rare",
+                    "Rev": "Rare",
+                    "Mlle": "Miss",
+                    "Major": "Rare",
+                    "Col": "Rare",
+                    "Sir": "Rare",
+                    "Mme": "Mrs",
+                    "Don": "Rare",
+                    "Lady": "Rare",
+                    "Countess": "Rare",
+                    "Jonkheer": "Rare",
+                    "Dona": "Rare",
+                    "Capt": "Rare",
+                }
+            )
+            .fillna("Rare")
+        )
 
         # Sex: binarizar
-        X['Sex'] = X['Sex'].apply(lambda s: 1 if s == 'male' else 0)
+        X["Sex"] = X["Sex"].apply(lambda s: 1 if s == "male" else 0)
 
         # Deck e Cabin_Count
-        X['Deck'] = X['Cabin'].apply(lambda c: c[0] if pd.notna(c) else "Unknown")
-        X['Cabin_Count'] = X['Cabin'].apply(lambda c: len(c.split()) if pd.notna(c) else 0)
+        X["Deck"] = X["Cabin"].apply(lambda c: c[0] if pd.notna(c) else "Unknown")
+        X["Cabin_Count"] = X["Cabin"].apply(
+            lambda c: len(c.split()) if pd.notna(c) else 0
+        )
 
         # Ticket_Prefix
-        X['Ticket_Prefix'] = X['Ticket'].apply(
-            lambda t: re.match(r'([A-Z]+)', str(t).upper()).group(1) if re.match(r'([A-Z]+)', str(t).upper()) else "Numeric"
+        X["Ticket_Prefix"] = X["Ticket"].apply(
+            lambda t: (
+                re.match(r"([A-Z]+)", str(t).upper()).group(1)
+                if re.match(r"([A-Z]+)", str(t).upper())
+                else "Numeric"
+            )
         )
 
         # Age Group
-        X['Age'] = X['Age'].fillna(X['Age'].median())
-        X['Age_Group'] = pd.cut(X['Age'], bins=[0, 12, 18, 35, 60, 100],
-                                labels=['Child', 'Teenager', 'Young', 'Adult', 'Elderly'])
+        X["Age"] = X["Age"].fillna(X["Age"].median())
+        X["Age_Group"] = pd.cut(
+            X["Age"],
+            bins=[0, 12, 18, 35, 60, 100],
+            labels=["Child", "Teenager", "Young", "Adult", "Elderly"],
+        )
 
         # Fare Group
-        X['Fare_Group'] = X['Fare'].apply(lambda f: (
-            'Low' if f <= 7.91 else
-            'Medium' if f <= 14.454 else
-            'High' if f <= 31 else
-            'Very_High'
-        ) if pd.notna(f) else 'Unknown')
+        X["Fare_Group"] = X["Fare"].apply(
+            lambda f: (
+                (
+                    "Low"
+                    if f <= 7.91
+                    else "Medium" if f <= 14.454 else "High" if f <= 31 else "Very_High"
+                )
+                if pd.notna(f)
+                else "Unknown"
+            )
+        )
 
         # Alone + Family_Size
-        X['Family_Size'] = X['Parch'] + X['SibSp']
-        X['Alone'] = (X['Family_Size'] == 0).astype(int)
+        X["Family_Size"] = X["Parch"] + X["SibSp"]
+        X["Alone"] = (X["Family_Size"] == 0).astype(int)
 
         # Fill missing 'Embarked'
-        X['Embarked'] = X['Embarked'].fillna(X['Embarked'].mode()[0])
+        X["Embarked"] = X["Embarked"].fillna(X["Embarked"].mode()[0])
 
         # Ticket_Group_Size (count dos bilhetes iguais)
-        ticket_counts = X['Ticket'].value_counts()
-        X['Ticket_Group_Size'] = X['Ticket'].map(ticket_counts)
+        ticket_counts = X["Ticket"].value_counts()
+        X["Ticket_Group_Size"] = X["Ticket"].map(ticket_counts)
 
         return X
-    
+
 
 class TitanicPreprocessor:
     """Usa a pipeline treinada para preprocessar os dados"""
 
-    def __init__(self, pipeline_path='src/model/pipeline.pkl'):
-        with open(pipeline_path, 'rb') as f:
+    def __init__(self, pipeline_path="src/model/pipeline.pkl"):
+        with open(pipeline_path, "rb") as f:
             self.pipeline = pickle.load(f)
 
         # Recupera os nomes das colunas transformadas
@@ -82,23 +118,51 @@ class TitanicPreprocessor:
         Extrai os nomes das features transformadas da pipeline.
         """
         try:
-            column_transformer = self.pipeline.named_steps['preprocessing']
-            ohe = column_transformer.named_transformers_['ohe']
-            ohe_features = list(ohe.get_feature_names_out(column_transformer.transformers[0][2]))  # cat_ohe_cols
+            column_transformer = self.pipeline.named_steps["preprocessing"]
+            ohe = column_transformer.named_transformers_["ohe"]
+            ohe_features = list(
+                ohe.get_feature_names_out(column_transformer.transformers[0][2])
+            )  # cat_ohe_cols
 
-            passthrough_features = column_transformer.transformers[1][2]  # ordinal_cat_features
-            numeric_features = ['Family_Size', 'Cabin_Count', 'Ticket_Group_Size', 'Age', 'Fare']
+            passthrough_features = column_transformer.transformers[1][
+                2
+            ]  # ordinal_cat_features
+            numeric_features = [
+                "Family_Size",
+                "Cabin_Count",
+                "Ticket_Group_Size",
+                "Age",
+                "Fare",
+            ]
 
             return ohe_features + passthrough_features + numeric_features
 
         except Exception as e:
             logger.warning(f"Não foi possível extrair nomes das features: {e}")
-            return [f"feature_{i}" for i in range(self.pipeline.transform(
-                pd.DataFrame([{
-                    'PassengerId': 0, 'Pclass': 1, 'Name': '', 'Sex': 'male', 'Age': 30, 'SibSp': 0,
-                    'Parch': 0, 'Ticket': '12345', 'Fare': 10.0, 'Cabin': None, 'Embarked': 'S'
-                }])
-            ).shape[1])]
+            return [
+                f"feature_{i}"
+                for i in range(
+                    self.pipeline.transform(
+                        pd.DataFrame(
+                            [
+                                {
+                                    "PassengerId": 0,
+                                    "Pclass": 1,
+                                    "Name": "",
+                                    "Sex": "male",
+                                    "Age": 30,
+                                    "SibSp": 0,
+                                    "Parch": 0,
+                                    "Ticket": "12345",
+                                    "Fare": 10.0,
+                                    "Cabin": None,
+                                    "Embarked": "S",
+                                }
+                            ]
+                        )
+                    ).shape[1]
+                )
+            ]
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -110,7 +174,7 @@ class TitanicPreprocessor:
             df_transformed = pd.DataFrame(transformed, columns=self.feature_names)
 
             # Adiciona PassengerId de volta
-            df_transformed.insert(0, 'PassengerId', df_input['PassengerId'].values)
+            df_transformed.insert(0, "PassengerId", df_input["PassengerId"].values)
 
             logger.info("Dados processados com sucesso pela pipeline.")
             return df_transformed.iloc[0].to_dict()
