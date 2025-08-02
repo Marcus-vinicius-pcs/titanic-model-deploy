@@ -10,7 +10,7 @@ logger = logging.getLogger('src.utils')
 class ModelManager:
     """Manages model loading, prediction, and state"""
     
-    def __init__(self, model_path: str = "src/model/model.pkl"):
+    def __init__(self, model_path: str = "src/model/logistic_regression.pkl"):
         self.model_path = model_path
         self.model: Optional[Any] = None
     

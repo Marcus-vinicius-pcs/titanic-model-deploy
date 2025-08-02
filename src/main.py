@@ -31,14 +31,14 @@ prediction_history: List[Dict[str, Any]] = []
 
 class PassengerData(BaseModel):
     PassengerId: int
-    Pclass: Optional[int]
+    Pclass: int
     Name: str
-    Sex: Optional[str] = None
-    Age: Optional[float] = None
-    SibSp: Optional[int] = None
-    Parch: Optional[int] = None
-    Ticket: Optional[str] = None
-    Fare: Optional[float] = None
+    Sex: str 
+    Age: float
+    SibSp: int
+    Parch: int
+    Ticket: str
+    Fare: float
     Cabin: Optional[str] = None
     Embarked: Optional[str] = None
     

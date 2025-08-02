@@ -87,7 +87,7 @@ class TitanicPreprocessor:
             ohe_features = list(ohe.get_feature_names_out(column_transformer.transformers[0][2]))  # cat_ohe_cols
 
             passthrough_features = column_transformer.transformers[1][2]  # ordinal_cat_features
-            numeric_features = ['Family_Size', 'Cabin_Count', 'Ticket_Group_Size']
+            numeric_features = ['Family_Size', 'Cabin_Count', 'Ticket_Group_Size', 'Age', 'Fare']
 
             return ohe_features + passthrough_features + numeric_features
 
