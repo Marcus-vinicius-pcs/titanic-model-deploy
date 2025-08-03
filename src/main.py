@@ -13,17 +13,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.utils import ModelManager
 from src.data_processing import TitanicPreprocessor
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("src.main")
 
 app = FastAPI(
     title="Titanic Survival Prediction API",
-    description="API for predicting passenger survival on the Titanic",
+    description="API para predição de sobrevivência no Titanic",
     version="1.0.0",
 )
 
-# Global instances
 model_manager = ModelManager()
 preprocessor = TitanicPreprocessor()
 prediction_history: List[Dict[str, Any]] = []
@@ -69,34 +67,34 @@ class PredictionResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Load model on startup"""
+    """Carrega o modelo ao iniciar a aplicação"""
     try:
         model_manager.load_model()
-        logger.info("Model loaded successfully on startup")
+        logger.info("Modelo carregado com sucesso ao iniciar a aplicação")
     except Exception as e:
-        logger.warning(f"Failed to load model on startup: {e}")
+        logger.warning(f"Falha ao carregar o modelo ao iniciar: {e}")
 
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(passenger: PassengerData):
-    """Predict passenger survival"""
+    """Realiza a predição de sobrevivência de um passageiro"""
     try:
         if not model_manager.is_model_loaded():
-            raise HTTPException(status_code=503, detail="Model not loaded")
+            raise HTTPException(status_code=503, detail="Modelo não carregado")
 
         passenger_dict = passenger.dict()
         logger.info(
-            f"Received prediction request for PassengerId {passenger.PassengerId}"
+            f"Requisição de predição recebida para PassengerId {passenger.PassengerId}"
         )
-        logger.debug(f"Passenger data: {passenger_dict}")
+        logger.debug(f"Dados do passageiro: {passenger_dict}")
 
         processed_data = preprocessor.process(passenger_dict)
-        logger.debug(f"Processed data: {processed_data}")
+        logger.debug(f"Dados processados: {processed_data}")
         logger.info(f"Usando modelo: {model_manager.model}")
         prediction = model_manager.predict(processed_data)
 
         logger.info(
-            f"Prediction made for PassengerId {passenger.PassengerId}: {prediction['prediction']} (prob: {prediction['probability']})"
+            f"Predição realizada para PassengerId {passenger.PassengerId}: {prediction['prediction']} (prob: {prediction['probability']})"
         )
         response = PredictionResponse(
             PassengerId=passenger.PassengerId,
@@ -113,35 +111,35 @@ async def predict(passenger: PassengerData):
             }
         )
 
-        logger.info(f"Prediction response: {response}")
+        logger.info(f"Resposta da predição: {response}")
         return response
 
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        logger.error(f"Erro ao realizar predição: {e}")
+        raise HTTPException(status_code=500, detail=f"Falha na predição: {str(e)}")
 
 
 @app.post("/load")
 async def load_model(file: UploadFile = File(...)):
-    """Load a new model from uploaded pickle file"""
+    """Carrega um novo modelo a partir de um arquivo pickle enviado"""
     try:
         if not file.filename.endswith(".pkl"):
-            raise HTTPException(status_code=400, detail="File must be a .pkl file")
+            raise HTTPException(status_code=400, detail="O arquivo deve ser .pkl")
 
         contents = await file.read()
         model_manager.load_model_from_bytes(contents)
 
-        logger.info(f"New model loaded: {file.filename}")
-        return {"message": f"Model {file.filename} loaded successfully"}
+        logger.info(f"Novo modelo carregado: {file.filename}")
+        return {"message": f"Modelo {file.filename} carregado com sucesso"}
 
     except Exception as e:
-        logger.error(f"Model loading error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
+        logger.error(f"Erro ao carregar modelo: {e}")
+        raise HTTPException(status_code=500, detail=f"Falha ao carregar modelo: {str(e)}")
 
 
 @app.get("/history")
 async def get_history():
-    """Get prediction history"""
+    """Retorna o histórico das predições realizadas"""
     return {
         "total_predictions": len(prediction_history),
         "history": prediction_history[-100:],
@@ -150,12 +148,12 @@ async def get_history():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Endpoint de verificação de saúde da aplicação"""
     return {
-        "status": "healthy",
-        "model_loaded": model_manager.is_model_loaded(),
+        "status": "ok",
+        "modelo_carregado": model_manager.is_model_loaded(),
         "timestamp": datetime.now().isoformat(),
-        "total_predictions": len(prediction_history),
+        "total_predicoes": len(prediction_history),
     }
 
 

@@ -16,7 +16,6 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
 
-        # Title
         X["Title"] = X["Name"].apply(
             lambda name: (
                 re.search(r" ([A-Za-z]+)\.", name).group(1)
@@ -53,13 +52,13 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
         # Sex: binarizar
         X["Sex"] = X["Sex"].apply(lambda s: 1 if s == "male" else 0)
 
-        # Deck e Cabin_Count
+        # Deck e quantidade de cabines
         X["Deck"] = X["Cabin"].apply(lambda c: c[0] if pd.notna(c) else "Unknown")
         X["Cabin_Count"] = X["Cabin"].apply(
             lambda c: len(c.split()) if pd.notna(c) else 0
         )
 
-        # Ticket_Prefix
+        # Prefixo do ticket
         X["Ticket_Prefix"] = X["Ticket"].apply(
             lambda t: (
                 re.match(r"([A-Z]+)", str(t).upper()).group(1)
@@ -68,7 +67,7 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
             )
         )
 
-        # Age Group
+        # Faixa etária
         X["Age"] = X["Age"].fillna(X["Age"].median())
         X["Age_Group"] = pd.cut(
             X["Age"],
@@ -76,7 +75,7 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
             labels=["Child", "Teenager", "Young", "Adult", "Elderly"],
         )
 
-        # Fare Group
+        # Faixa de tarifa
         X["Fare_Group"] = X["Fare"].apply(
             lambda f: (
                 (
@@ -89,14 +88,14 @@ class CategoricalFeatureEngineer(BaseEstimator, TransformerMixin):
             )
         )
 
-        # Alone + Family_Size
+        # Sozinho + tamanho da família
         X["Family_Size"] = X["Parch"] + X["SibSp"]
         X["Alone"] = (X["Family_Size"] == 0).astype(int)
 
-        # Fill missing 'Embarked'
+        # Preencher 'Embarked' ausente
         X["Embarked"] = X["Embarked"].fillna(X["Embarked"].mode()[0])
 
-        # Ticket_Group_Size (count dos bilhetes iguais)
+        # Tamanho do grupo do ticket (quantidade de pessoas com o mesmo ticket)
         ticket_counts = X["Ticket"].value_counts()
         X["Ticket_Group_Size"] = X["Ticket"].map(ticket_counts)
 
